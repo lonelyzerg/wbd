@@ -6,14 +6,20 @@ class Angle():
         self.minute = 0.0
     
     def setDegrees(self, degrees):
-        inputType = types(degrees)
+        inputType = type(degrees)
         if (inputType != types.IntType) & (inputType != types.FloatType):
-            raise Exception("Angle.setDegrees: Invalid input (input is not a number)", inputType)
+            raise Exception("Angle.setDegrees: Invalid input (input is not a number)")
+        while degrees < 0:
+            self.degrees += 360
+        while self.degrees > 360:
+            self.degrees -= 360
         self.degree = floor(degrees)
         self.minute = degrees - self.degree
     
     def setDegreesAndMinutes(self, degrees):
-        pass
+        if type(degrees) != types.StringTypes:
+            raise Exception()
+         
     
     def add(self, angle):
         pass
