@@ -1,15 +1,20 @@
+'''
+Created on 9/7/2016
+
+@author: Tianhang Lan
+'''
+
 from math import floor
 import types
-from warnings import catch_warnings
 class Angle():
     def __init__(self):
-        self.degree = 0       #set to 0 degrees 0 minutes   
-        self.minute = 0.0
+        self.degree = 0         #set to 0 degrees 0 minutes   
+        self.minute = 0.0       #set to 0 minute 0 minutes  
     
     def setDegrees(self, degrees):
         inputType = type(degrees)
         if (inputType != types.IntType) & (inputType != types.FloatType):
-            raise Exception("Angle.setDegrees: Invalid input (input is not a number)")
+            raise Exception("Angle.setDegrees: Invalid input (input is not a number)")      #judge if input is a number
         while degrees < 0:
             self.degree += 360
         while self.degree >= 360:
