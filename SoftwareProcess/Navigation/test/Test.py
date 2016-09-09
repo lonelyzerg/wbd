@@ -1,5 +1,5 @@
 '''
-Created on 9/7/2016
+Created on Sep 7, 2016
 
 @author: lonelyzerg
 '''
