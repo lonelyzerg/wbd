@@ -23,10 +23,10 @@ class Angle():
         self.minute = (degrees - self.degree)*60
         return self.degree + round(self.minute/60.0,1)
     
-    def setDegreesAndMinutes(self, degrees):
-        if isinstance(degrees, basestring) == False:
+    def setDegreesAndMinutes(self, angleString):
+        if isinstance(angleString, basestring) == False:
             raise Exception("Angle.setDegreesAndMinutes: Invalid input (input is not a string)")
-        data = degrees.split("d")
+        data = angleString.split("d")
         if len(data) != 2:
             raise Exception("Angle.setDegreesAndMinutes: Invalid input (input is not formated)")
         try:
