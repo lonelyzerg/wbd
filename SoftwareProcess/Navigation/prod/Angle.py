@@ -29,11 +29,14 @@ class Angle():
         data = angleString.split("d")
         if len(data) != 2:
             raise Exception("Angle.setDegreesAndMinutes: Invalid input (input is not formated)")
+        
         try:
-            self.degree = int(data[0])
-        except ValueError:
-            raise Exception("Angle.setDegreesAndMinutes: Invalid input (degree is not an integer)")      #judge the format of input
+            self.degree = eval(data[0])                    
+        except:
+            raise Exception("Angle.setDegreesAndMinutes: Invalid input (degree is not a number)")      #judge the format of input
         else:
+            if type(self.degree) == types.FloatType:
+                raise Exception("Angle.setDegreesAndMinutes: Invalid input (degree is a float, not an integer)")
             try:
                 self.minute = int(data[1])
             except:
