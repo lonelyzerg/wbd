@@ -129,6 +129,8 @@ class TCurveTest(unittest.TestCase):
     def test600_100ShouldCalculateHighHighT2TailEdgeCase(self):
         myT = T.TCurve(20)
         self.assertAlmostEquals(myT.p(2.8453, 2), .99, 3)
+    
+
 
 # Sad path
     def test600_910ShouldRaiseExceptionOnMissingT(self):

@@ -52,6 +52,7 @@ class TCurve(object):
         numerator = self.gamma((n + 1.0) / 2.0)
         denominator = self.gamma(n / 2.0) * math.sqrt(n * math.pi)
         result = numerator / denominator
+        print "result " + str(result)
         return result
     
     def f(self, u, n):
@@ -65,10 +66,22 @@ class TCurve(object):
         epsilon = 0.001
         simpsonOld = 0
         simpsonNew = epsilon
-        s = 4
+        s = math.floor(t*10)
         while(abs((simpsonNew-simpsonOld)/simpsonNew)>epsilon):
             simpsonOld = simpsonNew
-            #w = ()
+            w = float(t) / s
+            i = 1
+            sim = float (f(0, n) + f(t,n))           
+            while(i < s):
+                if ( i == s - 1):
+                    sim = sim + 4*f(i*w,n)
+                else:
+                    sim = sim + 4*f(i*w,n) + 2*f(i*w +w,n)
+                print (i)
+                i = i + 2               
+            simpsonNew = (w / 3) * sim
+            s = s*2
+        return simpsonNew
         
         
     
