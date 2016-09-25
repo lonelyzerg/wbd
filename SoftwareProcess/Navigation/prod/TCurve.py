@@ -62,7 +62,13 @@ class TCurve(object):
         return result
     
     def integrate(self, t, n, f):
-        pass
+        epsilon = 0.001
+        simpsonOld = 0
+        simpsonNew = epsilon
+        s = 4
+        while(abs((simpsonNew-simpsonOld)/simpsonNew)>epsilon):
+            simpsonOld = simpsonNew
+            #w = ()
         
         
     
