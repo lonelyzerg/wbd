@@ -11,63 +11,83 @@ class Angle():
         self.degree = 0         #set to 0 degrees 0 minutes   
         self.minute = 0.0       #set to 0 minute 0 minutes  
     
-    def setDegrees(self, degrees):
+    def setDegrees(self, degrees = 0.0):
         inputType = type(degrees)
         if (inputType != types.IntType) & (inputType != types.FloatType):
-            raise Exception("Angle.setDegrees: Invalid input (input is not a number)")      #judge if input is a number
+            raise ValueError("Angle.setDegrees: Invalid input (input is not a number)")      #judge if input is a number
         while degrees < 0:
             degrees += 360
         while degrees >= 360:
             degrees -= 360      #mod 360
         self.degree = floor(degrees)
         self.minute = (degrees - self.degree)*60
-        return self.degree + round(self.minute/60.0,1)
+        return self.degree + self.minute/60.0
     
     def setDegreesAndMinutes(self, angleString):
+        minu = self.minute
+        degr = self.degree
+        
         if isinstance(angleString, basestring) == False:
-            raise Exception("Angle.setDegreesAndMinutes: Invalid input (input is not a string)")
+            self.minute = minu
+            self.degree = degr
+            raise ValueError("Angle.setDegreesAndMinutes: Invalid input (input is not a string)")
         data = angleString.split("d")
         if len(data) != 2:
-            raise Exception("Angle.setDegreesAndMinutes: Invalid input (input is not formated)")
+            self.minute = minu
+            self.degree = degr
+            raise ValueError("Angle.setDegreesAndMinutes: Invalid input (input is not formated)")
+            errorTag = True
         
         try:
-            self.degree = eval(data[0])                    
+            self.degree = int(data[0])                    
         except:
-            raise Exception("Angle.setDegreesAndMinutes: Invalid input (degree is not a number)")      #judge the format of input
+            self.minute = minu
+            self.degree = degr
+            raise ValueError("Angle.setDegreesAndMinutes: Invalid input (degree is not a number)")      #judge the format of input
         else:
             if type(self.degree) == types.FloatType:
-                raise Exception("Angle.setDegreesAndMinutes: Invalid input (degree is a float, not an integer)")
+                self.minute = minu
+                self.degree = degr
+                raise ValueError("Angle.setDegreesAndMinutes: Invalid input (degree is a float, not an integer)")
             try:
                 self.minute = int(data[1])
             except:
                 try:
                     self.minute = float(data[1])
                 except:
-                    raise Exception("Angle.setDegreesAndMinutes: Invalid input (minute is not a number)")
-                    
-            else:
-                if self.minute < 0:
-                        raise Exception("Angle.setDegreesAndMinutes: Invalid input (minute is not positive)")       #judge the format of input
-                if self.degree < 0:
-                    self.minute = - self.minute
-                    self.degree += 360
+                    self.minute = minu
+                    self.degree = degr
+                    raise ValueError("Angle.setDegreesAndMinutes: Invalid input (minute is not a number)")
+                else:
+                    if round(self.minute,1) != float(self.minute):
+                        self.minute = minu
+                        self.degree = degr
+                        raise ValueError("Angle.setDegreesAndMinutes: Invalid input (minute is not a one decimal number)")
+        
+        if self.minute < 0:
+            self.minute = minu
+            self.degree = degr
+            raise ValueError("Angle.setDegreesAndMinutes: Invalid input (minute is not positive)")       #judge the format of input
+        if self.degree < 0:
+            self.minute = - self.minute
+            self.degree += 360
                 
-                while self.minute >= 60:
-                    self.minute -= 60
-                    self.degree += 1        #mod 60
-                while self.minute < 0:
-                    self.minute += 60
-                    self.degree -= 1
+        while self.minute >= 60:
+            self.minute -= 60
+            self.degree += 1        #mod 60
+        while self.minute < 0:
+            self.minute += 60
+            self.degree -= 1
                 
-                while self.degree < 0:
-                    self.degree += 360
-                while self.degree >= 360:
-                    self.degree -= 360      #mod 360
-                return self.degree + round(self.minute/60.0,1)
+        while self.degree < 0:
+            self.degree += 360
+        while self.degree >= 360:
+            self.degree -= 360      #mod 360     
+        return self.degree + self.minute/60.0
     
-    def add(self, angle):
+    def add(self, angle = None):
         if isinstance(angle,Angle) == False:
-            raise Exception("Angle.add: Invalid input (input is not an angle)")     #judge the format of input
+            raise ValueError("Angle.add: Invalid input (input is not an angle)")     #judge the format of input
         self.degree += angle.degree
         self.minute += angle.minute
         while self.minute >= 60:
@@ -75,28 +95,28 @@ class Angle():
             self.degree += 1        #mod 60
         while self.degree >= 360:
             self.degree -= 360      #mod 360
-        return self.degree + round(self.minute/60.0,1)
+        return self.degree + self.minute/60.0
     
-    def subtract(self, angle):
+    def subtract(self, angle = None):
         if isinstance(angle,Angle) == False:
-            raise Exception("Angle.subtract: Invalid input (input is not an angle)")        #judge the format of input
+            raise ValueError("Angle.subtract: Invalid input (input is not an angle)")        #judge the format of input
         self.degree -= angle.degree
         self.minute -= angle.minute
         while self.minute >= 60:
             self.minute -= 60
             self.degree += 1
-        while self.minute <= 0:
+        while self.minute < 0:
             self.minute += 60
             self.degree -= 1        #mod 60
         while self.degree >= 360:
             self.degree -= 360
         while self.degree < 0:
             self.degree += 360      #mod 360
-        return self.degree + round(self.minute/60.0,1)
+        return self.degree + self.minute/60.0
 
-    def compare(self, angle):
+    def compare(self, angle = None):
         if isinstance(angle,Angle) == False:
-            raise Exception("Angle.compare: Invalid input (input is not an angle)")
+            raise ValueError("Angle.compare: Invalid input (input is not an angle)")
         if self.degree > angle.degree:
             return 1
         else:
@@ -116,4 +136,4 @@ class Angle():
         return str(self.degree)+"d"+str(round(self.minute,1))
     
     def getDegrees(self):
-        return self.degree + round(self.minute/60.0,1)
+        return self.degree + round(self.minute,1)/60.0
