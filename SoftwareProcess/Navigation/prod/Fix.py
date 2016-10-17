@@ -190,7 +190,3 @@ class Fix():
             + " " + str("{:0>2d}".format(t.tm_hour)) + ":" + str("{:0>2d}".format(t.tm_min)) + ":" + str("{:0>2d}".format(t.tm_sec)) \
             + "-6:00\t" + content + "\n"
         self.logFile.write(string)
-        
-        
-            
-            
