@@ -7,6 +7,7 @@ Created on 10/10/2016
 import time
 import xml.etree.ElementTree as ET
 import math
+from os.path import isfile
 
 class Fix():
     def __init__(self, logFile = "log.txt"):
@@ -25,30 +26,32 @@ class Fix():
         self.sightingFile = None
         self.sightingFileSet = False
         self.writeLog("Start of log", time.gmtime())
-        self.logFile.close()
         
     def setSightingFile(self, sightingFile = None):
         if not isinstance(sightingFile, str):
             raise ValueError("Fix.setSightingFile: Invalid input (input is not a String)")      #judge if input is a string
             return
-        if len(sightingFile) < 1:
+        if len(sightingFile) < 5:
             raise ValueError("Fix.setSightingFile: Invalid input (input length less than 1)")      #judge if input length >= 1
             return
         if sightingFile[-4:] != ".xml":
             raise ValueError("Fix.setSightingFile: Invalid input (input is not an xml file)")      #judge if input is .xml
             return
+        if not isfile(sightingFile):
+            raise ValueError("Fix.setSightingFile: File not exit")      #judge if input is .xml
+            return
         if self.sightingFile != None:
             self.sightingFile.close()
         self.sightingFile = None
         try:
-            self.sightingFile = open(sightingFile, "a+") 
+            self.sightingFile = open(sightingFile, "a") 
             self.sightingFile.close()          
         except:
             raise ValueError("Fix.setSightingFile: unable to open or create the xml file")      #if unable to open or create, raise exception
             return
         self.sightingFileSet = True
         self.sightName = sightingFile
-        self.writeLog("Start of sighting file" + sightingFile, time.gmtime())
+        self.writeLog("Start of sighting file " + sightingFile, time.gmtime())
         return sightingFile            
 
     def getSightings(self):        
@@ -59,7 +62,7 @@ class Fix():
             et = ET.ElementTree(file = self.sightName)
             fix = et.getroot()
             for sightings in fix:
-                tup = [None, None, None, None, 0, 72, 1010, "natural"]
+                tup = [None, None, None, None, 0, 22.2222222, 1010, 1]
                 for attr in sightings:                    
                     if attr.tag == "body":
                         if len(attr.text) < 1:
@@ -119,7 +122,7 @@ class Fix():
                         
                     if attr.tag == "temperature":
                         try:
-                            tup[5] = ((float(attr.text) - 32) * 5 / 9)
+                            tup[5] = ((float(attr.text) - 32) * 5 / 9.0)
                             if tup[5] > 120 or tup[5] < -20:
                                 raise ValueError("Fix.getSightings: sighting data invalid")
                                 
@@ -138,23 +141,22 @@ class Fix():
                             raise ValueError("Fix.getSightings: sighting data invalid")
                         
                     if attr.tag == ("horizon"):
-                        if attr.text == "Artificial":
+                        if attr.text == "Artificial" or attr.text == "artificial":
                             tup[7] = 0
                         else:
-                            if attr.text == "Natural":
-                                tup[7] = attr.text
+                            if attr.text == "Natural" or attr.text == "natural":
+                                tup[7] = 1
                             else:
-                                raise ValueError("Fix.getSightings: sighting data invalid")
-                        tup[7] = (attr.text)
+                                raise ValueError("Fix.getSightings: invalid horizon")                   
+                                return
                         
                 if tup[0] == None or tup[1] == None or tup[2] == None or tup[3] == None:
-                    raise ValueError("Fix.getSightings: Lack mandatory tag")
-                    
+                    raise ValueError("Fix.getSightings: Lack mandatory tag")                   
                     return
                 
                 if tup[7] != 0:
                     tup[7] = (-0.97 * math.sqrt(tup[4])) / 60.0
-                refraction = (-0.00452 * tup[6]) / (273.0 + tup[5]) / math.tan(tup[3][0] + tup[3][1]/60.0)
+                refraction = (-0.00452 * tup[6]) / (273.0 + tup[5]) / math.tan((tup[3][0] + tup[3][1] / 60.0) / 180 * math.pi)
                 adjAlt = tup[7] + refraction + tup[3][0] + tup[3][1]/60.0
                 adjustedAltitude = str(int(adjAlt)) + "d" + str(round((adjAlt - int(adjAlt)) * 60, 1))
                 self.writeLog(tup[0] + "\t" + tup[1] + "\t" + tup[2] + "\t" + adjustedAltitude, time.gmtime())                
@@ -162,7 +164,7 @@ class Fix():
             self.writeLog("End of sighting file" + self.sightName, time.gmtime())
             raise ValueError("Fix.getSightings: unable to parse the xml file")           
             return
-        self.writeLog("End of sighting file" + self.sightName, time.gmtime())
+        self.writeLog("End of sighting file " + self.sightName, time.gmtime())
         return ("0d0.0", "0d0.0")
     
     def writeLog(self, content, t):
