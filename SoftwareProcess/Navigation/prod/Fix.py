@@ -25,6 +25,7 @@ class Fix():
         self.sightingFile = None
         self.sightingFileSet = False
         self.writeLog("Start of log", time.gmtime())
+        self.logFile.close()
         
     def setSightingFile(self, sightingFile = None):
         if not isinstance(sightingFile, str):
@@ -165,7 +166,9 @@ class Fix():
         return ("0d0.0", "0d0.0")
     
     def writeLog(self, content, t):
+        self.logFile = open(self.logName, "a+")
         string = "LOG:\t" + str(t.tm_year) + "-" + str("{:0>2d}".format(t.tm_mon)) + "-" + str("{:0>2d}".format(t.tm_mday)) \
             + " " + str("{:0>2d}".format(t.tm_hour)) + ":" + str("{:0>2d}".format(t.tm_min)) + ":" + str("{:0>2d}".format(t.tm_sec)) \
             + "-6:00\t" + content + "\n"
         self.logFile.write(string)
+        self.logFile.close()
