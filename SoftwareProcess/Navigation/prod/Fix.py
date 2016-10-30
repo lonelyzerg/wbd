@@ -7,7 +7,8 @@ Created on 10/10/2016
 import time
 import xml.etree.ElementTree as ET
 import math
-from os.path import isfile
+import os.path as path
+
 
 class Fix():
     def __init__(self, logFile = "log.txt"):
@@ -24,8 +25,12 @@ class Fix():
             raise ValueError("Fix.__init__: unable to open or create the file")      #if unable to open or create, raise exception
             return
         self.sightingFile = None
+        self.ariesFile = None
+        self.starFile = None
         self.sightingFileSet = False
-        self.writeLog("Start of log", time.gmtime())
+        self.ariesFileSet = False
+        self.starFileSet = False
+        self.writeLog("Log file:\t" + path.abspath(logFile), time.gmtime())
         
     def setSightingFile(self, sightingFile = None):
         if not isinstance(sightingFile, str):
@@ -37,8 +42,8 @@ class Fix():
         if sightingFile[-4:] != ".xml":
             raise ValueError("Fix.setSightingFile: Invalid input (input is not an xml file)")      #judge if input is .xml
             return
-        if not isfile(sightingFile):
-            raise ValueError("Fix.setSightingFile: File not exit")      #judge if input is .xml
+        if not path.isfile(sightingFile):
+            raise ValueError("Fix.setSightingFile: File not exit")      #judge if input is a file
             return
         if self.sightingFile != None:
             self.sightingFile.close()
@@ -47,16 +52,70 @@ class Fix():
             self.sightingFile = open(sightingFile, "a") 
             self.sightingFile.close()          
         except:
-            raise ValueError("Fix.setSightingFile: unable to open or create the xml file")      #if unable to open or create, raise exception
+            raise ValueError("Fix.setSightingFile: unable to open or create the xml file")      #if unable to open or create, raise value error
             return
         self.sightingFileSet = True
         self.sightName = sightingFile
-        self.writeLog("Start of sighting file " + sightingFile, time.gmtime())
-        return sightingFile            
-
+        self.writeLog("Sighting file:\t" + path.abspath(sightingFile), time.gmtime())
+        return path.abspath(sightingFile)           
+    
+    def setAriesFile(self, ariesFile = None):
+        if not isinstance(ariesFile, str):
+            raise ValueError("Fix.setAriesFile: Invalid input (input is not a String)")      #judge if input is a string
+            return
+        if len(ariesFile) < 4:
+            raise ValueError("Fix.setAriesFile: Invalid input (input length less than 1)")      #judge if input length >= 1
+            return
+        if ariesFile[-4:] != ".txt":
+            raise ValueError("Fix.setAriesFile: Invalid input (input is not an txt file)")      #judge if input is .txt
+            return
+        if not path.isfile(ariesFile):
+            raise ValueError("Fix.setAriesFile: File not exit")      #judge if input is a file
+            return
+        if self.ariesFile != None:
+            self.ariesFile.close()
+        self.ariesFile = None
+        try:
+            self.ariesFile = open(ariesFile, "a") 
+            self.ariesFile.close()          
+        except:
+            raise ValueError("Fix.setAriesFile: unable to open or create the txt file")      #if unable to open or create, raise value error
+            return
+        self.ariesFileSet = True
+        self.ariesName = ariesFile
+        self.writeLog("Aries file:\t" + path.abspath(ariesFile), time.gmtime())
+        return path.abspath(ariesFile) 
+    
+    def setStarFile(self, starFile = None):
+        if not isinstance(starFile, str):
+            raise ValueError("Fix.setStarFile: Invalid input (input is not a String)")      #judge if input is a string
+            return
+        if len(starFile) < 4:
+            raise ValueError("Fix.setStarFile: Invalid input (input length less than 1)")      #judge if input length >= 1
+            return
+        if starFile[-4:] != ".txt":
+            raise ValueError("Fix.setStarFilee: Invalid input (input is not an txt file)")      #judge if input is .txt
+            return
+        if not path.isfile(starFile):
+            raise ValueError("Fix.setStarFile: File not exit")      #judge if input is a file
+            return
+        if self.starFile != None:
+            self.starFile.close()
+        self.starFile = None
+        try:
+            self.starFile = open(starFile, "a") 
+            self.starFile.close()          
+        except:
+            raise ValueError("Fix.setStarFile: unable to open or create the txt file")      #if unable to open or create, raise value error
+            return
+        self.starFileSet = True
+        self.starName = starFile
+        self.writeLog("Star file:\t" + path.abspath(starFile), time.gmtime())
+        return path.abspath(starFile) 
+    
     def getSightings(self):        
-        if not self.sightingFile:
-            raise ValueError("Fix.getSightings: sighting file not set")
+        if not (self.sightingFileSet and self.ariesFileSet and self.starFileSet):
+            raise ValueError("Fix.setStarFile: sighting file not set")
         et = None
         try:
             et = ET.ElementTree(file = self.sightName)
