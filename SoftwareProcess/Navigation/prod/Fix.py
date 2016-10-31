@@ -117,6 +117,7 @@ class Fix():
     def getSightings(self):        
         if not (self.sightingFileSet and self.ariesFileSet and self.starFileSet):
             raise ValueError("Fix.setStarFile: Files not set")
+        optputList = []
         et = None
         self.faultCount = 0 
         try:
@@ -125,11 +126,11 @@ class Fix():
             self.list = None
             for sightings in fix:
                 self.fault = False
-                tup = [None, None, None, None, 0, 22.2222222, 1010, 1, 0]
+                tup = [None, None, None, None, 0, 22.2222222, 1010, 1, 0, None, None]
                 for attr in sightings:                    
                     if attr.tag == "body":
                         if len(attr.text) < 1:
-                            self.Fault = True
+                            self.fault = True
                             continue
     #                             raise ValueError("Fix.getSightings: sighting data invalid")
                         tup[0] = (attr.text)
@@ -139,14 +140,14 @@ class Fix():
                             dat = attr.text.split("-")
                             self.date = time.strptime(attr.text, "%Y-%m-%d")
                             if not (len(dat) == 3 and len(dat[0]) == 4 and len(dat[1]) == 2 and len(dat[2]) == 2):
-                                self.Fault = True
+                                self.fault = True
                                 continue
     #                                 raise ValueError("Fix.getSightings: sighting data invalid")
                             int(dat[0])
                             int(dat[1])
                             int(dat[2])
                         except:
-                            self.Fault = True
+                            self.fault = True
                             continue                     
     #                             raise ValueError("Fix.getSightings: sighting data invalid")
                         tup[1] = self.date
@@ -156,14 +157,14 @@ class Fix():
                             dat = attr.text.split(":")
                             self.time = time.strptime(attr.text, "%H:%M:%S")
                             if not (len(dat) == 3 and len(dat[0]) == 2 and len(dat[1]) == 2 and len(dat[2]) == 2):
-                                self.Fault = True
+                                self.fault = True
                                 continue
     #                                 raise ValueError("Fix.getSightings: sighting data invalid")
                             int(dat[0])
                             int(dat[1])
                             int(dat[2])
                         except:
-                            self.Fault = True
+                            self.fault = True
                             continue
     #                             raise ValueError("Fix.getSightings: sighting data invalid")
                         tup[2] = self.time
@@ -176,12 +177,12 @@ class Fix():
                             dat[0] = float(dat[0])
                             dat[1] = float(dat[1])
                             if (dat[0] < 0 or dat[0] >= 90 or dat[1] < 0 or dat[1] >= 60) or (dat[0] == 0 and dat[1] <0.1):
-                                self.Fault = True
+                                self.fault = True
                                 continue
     #                                 raise ValueError("Fix.getSightings: sighting data invalid")
                             tup[3] = dat
                         except:
-                            self.Fault = True
+                            self.fault = True
                             continue
     #                             raise ValueError("Fix.getSightings: sighting data invalid")
                         
@@ -189,12 +190,12 @@ class Fix():
                         try:
                             tup[4] = (float(attr.text))
                             if tup[4] < 0:
-                                self.Fault = True
+                                self.fault = True
                                 continue
     #                                 raise ValueError("Fix.getSightings: sighting data invalid")
     #                                 return
                         except:
-                            self.Fault = True
+                            self.fault = True
                             continue
     #                             raise ValueError("Fix.getSightings: sighting data invalid")
     #                             return
@@ -203,12 +204,12 @@ class Fix():
                         try:
                             tup[5] = ((float(attr.text) - 32) * 5 / 9.0)
                             if tup[5] > 120 or tup[5] < -20:
-                                self.Fault = True
+                                self.fault = True
                                 continue
     #                                 raise ValueError("Fix.getSightings: sighting data invalid")
     #                                 return
                         except:
-                            self.Fault = True
+                            self.fault = True
                             continue
     #                             raise ValueError("Fix.getSightings: sighting data invalid")
     #                             return
@@ -217,11 +218,11 @@ class Fix():
                         try:
                             tup[6] = (int(attr.text))
                             if tup[6] < 100 or tup[6] > 1100:
-                                self.Fault = True
+                                self.fault = True
                                 continue
     #                                 raise ValueError("Fix.getSightings: sighting data invalid")
                         except:
-                            self.Fault = True
+                            self.fault = True
                             continue
     #                             raise ValueError("Fix.getSightings: sighting data invalid")
                         
@@ -232,32 +233,67 @@ class Fix():
                             if attr.text == "Natural" or attr.text == "natural":
                                 tup[7] = 1
                             else:
-                                self.Fault = True
+                                self.fault = True
                                 continue
     #                                 raise ValueError("Fix.getSightings: invalid horizon")                   
     #                                 return
                         
-                if tup[0] == None or tup[1] == None or tup[2] == None or tup[3] == None:
-                    continue
+                
+                
+                st = open(self.starName)
+                for line in st:
+                    self.fault = False
+                    lat = None
+                    lot = None
+                    templot = None
+                    templat = None
+                    try:
+                        line = line.replace("\n", "")
+                        content = line.split("\t")
+                        if content[0] == tup[0]:
+                            starDate = time.strptime(content[1], "%m/%d/%Y")
+                            if starDate == tup[1]:
+                                lat = content[2].split("d")
+                                a = int(lat[0])
+                                b = float(lat[1])
+                                if len(lat) != 2 or a < 0 or a >= 360 or b < 0 or b >= 360:
+                                    self.fault = True
+                                    break
+                                tup[9] = content[2]
+                            else:
+                                if content[0] < tup[0]:
+                                    templat = content[2].split("d")
+                                    a = int(templat[0])
+                                    b = float(templat[1])
+                                    if len(templat) != 2 or a < 0 or a >= 360 or b < 0 or b >= 360:
+                                        self.fault = True
+                                        break
+                                else:
+                                    if templat == None:
+                                        self.fault = True
+                                        break
+                                    tup[9] = content[2]
+                                    
+                        print line
+                    except:
+                        self.fault = True
+                        break
+                st.close()
+                
+                
+                if tup[0] == None or tup[1] == None or tup[2] == None or tup[3] == None or tup[9] == None or tup[10] == None:
+                    self.fault = True
     #                     raise ValueError("Fix.getSightings: Lack mandatory tag")                   
-    #                     return
-                if self.fault:
-                    self.faultCount += 1
-                    continue  
+    #                     return            
                 if tup[7] != 0:
                     tup[7] = (-0.97 * math.sqrt(tup[4])) / 60.0
                 refraction = (-0.00452 * tup[6]) / (273.0 + tup[5]) / math.tan((tup[3][0] + tup[3][1] / 60.0) / 180 * math.pi)
                 adjAlt = tup[7] + refraction + tup[3][0] + tup[3][1]/60.0
-                adjustedAltitude = str(int(adjAlt)) + "d" + str(round((adjAlt - int(adjAlt)) * 60, 1))
-                tup[8] = adjustForeignAttributes
-            st = open(self.starName)
-            for line in st:
-                line = line.replace("\n", "")
-                content = line.split("\t")
-                if content[0] == tup[0]:
-                    ariesDate = time.strptime(content[1], "%Y-%m-%d")
-                print line
-            st.close()
+                tup[8] = str(int(adjAlt)) + "d" + str(round((adjAlt - int(adjAlt)) * 60, 1))                
+                if self.fault:
+                    self.faultCount += 1
+                    continue  
+                optputList.append(tup)
 #                 self.writeLog(tup[0] + "\t" + tup[1] + "\t" + tup[2] + "\t" + adjustedAltitude, time.gmtime()) 
              
         except:
