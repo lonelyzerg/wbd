@@ -8,6 +8,7 @@ import time
 import xml.etree.ElementTree as ET
 import math
 import os.path as path
+from pip._vendor.html5lib.constants import adjustForeignAttributes
 
 
 class Fix():
@@ -115,44 +116,57 @@ class Fix():
     
     def getSightings(self):        
         if not (self.sightingFileSet and self.ariesFileSet and self.starFileSet):
-            raise ValueError("Fix.setStarFile: sighting file not set")
+            raise ValueError("Fix.setStarFile: Files not set")
         et = None
+        self.faultCount = 0 
         try:
             et = ET.ElementTree(file = self.sightName)
             fix = et.getroot()
+            self.list = None
             for sightings in fix:
-                tup = [None, None, None, None, 0, 22.2222222, 1010, 1]
+                self.fault = False
+                tup = [None, None, None, None, 0, 22.2222222, 1010, 1, 0]
                 for attr in sightings:                    
                     if attr.tag == "body":
                         if len(attr.text) < 1:
-                            raise ValueError("Fix.getSightings: sighting data invalid")
+                            self.Fault = True
+                            continue
+    #                             raise ValueError("Fix.getSightings: sighting data invalid")
                         tup[0] = (attr.text)
                         
                     if attr.tag == "date":
                         try:
                             dat = attr.text.split("-")
-                            time.strptime(attr.text, "%Y-%m-%d")
+                            self.date = time.strptime(attr.text, "%Y-%m-%d")
                             if not (len(dat) == 3 and len(dat[0]) == 4 and len(dat[1]) == 2 and len(dat[2]) == 2):
-                                raise ValueError("Fix.getSightings: sighting data invalid")
-                            int(dat[0])
-                            int(dat[1])
-                            int(dat[2])
-                        except:                            
-                            raise ValueError("Fix.getSightings: sighting data invalid")
-                        tup[1] = (attr.text)
-                        
-                    if attr.tag == "time":
-                        try:
-                            dat = attr.text.split(":")
-                            time.strptime(attr.text, "%H:%M:%S")
-                            if not (len(dat) == 3 and len(dat[0]) == 2 and len(dat[1]) == 2 and len(dat[2]) == 2):
-                                raise ValueError("Fix.getSightings: sighting data invalid")
+                                self.Fault = True
+                                continue
+    #                                 raise ValueError("Fix.getSightings: sighting data invalid")
                             int(dat[0])
                             int(dat[1])
                             int(dat[2])
                         except:
-                            raise ValueError("Fix.getSightings: sighting data invalid")
-                        tup[2] = (attr.text)
+                            self.Fault = True
+                            continue                     
+    #                             raise ValueError("Fix.getSightings: sighting data invalid")
+                        tup[1] = self.date
+                        
+                    if attr.tag == "time":
+                        try:
+                            dat = attr.text.split(":")
+                            self.time = time.strptime(attr.text, "%H:%M:%S")
+                            if not (len(dat) == 3 and len(dat[0]) == 2 and len(dat[1]) == 2 and len(dat[2]) == 2):
+                                self.Fault = True
+                                continue
+    #                                 raise ValueError("Fix.getSightings: sighting data invalid")
+                            int(dat[0])
+                            int(dat[1])
+                            int(dat[2])
+                        except:
+                            self.Fault = True
+                            continue
+    #                             raise ValueError("Fix.getSightings: sighting data invalid")
+                        tup[2] = self.time
                         
                     if attr.tag == "observation":
                         try:
@@ -162,42 +176,54 @@ class Fix():
                             dat[0] = float(dat[0])
                             dat[1] = float(dat[1])
                             if (dat[0] < 0 or dat[0] >= 90 or dat[1] < 0 or dat[1] >= 60) or (dat[0] == 0 and dat[1] <0.1):
-                                raise ValueError("Fix.getSightings: sighting data invalid")
+                                self.Fault = True
+                                continue
+    #                                 raise ValueError("Fix.getSightings: sighting data invalid")
                             tup[3] = dat
                         except:
-                            raise ValueError("Fix.getSightings: sighting data invalid")
+                            self.Fault = True
+                            continue
+    #                             raise ValueError("Fix.getSightings: sighting data invalid")
                         
                     if attr.tag == ("height"):
                         try:
                             tup[4] = (float(attr.text))
                             if tup[4] < 0:
-                                raise ValueError("Fix.getSightings: sighting data invalid")
-                                
-                                return
+                                self.Fault = True
+                                continue
+    #                                 raise ValueError("Fix.getSightings: sighting data invalid")
+    #                                 return
                         except:
-                            raise ValueError("Fix.getSightings: sighting data invalid")
-                            
-                            return
+                            self.Fault = True
+                            continue
+    #                             raise ValueError("Fix.getSightings: sighting data invalid")
+    #                             return
                         
                     if attr.tag == "temperature":
                         try:
                             tup[5] = ((float(attr.text) - 32) * 5 / 9.0)
                             if tup[5] > 120 or tup[5] < -20:
-                                raise ValueError("Fix.getSightings: sighting data invalid")
-                                
-                                return
+                                self.Fault = True
+                                continue
+    #                                 raise ValueError("Fix.getSightings: sighting data invalid")
+    #                                 return
                         except:
-                            raise ValueError("Fix.getSightings: sighting data invalid")
-                            
-                            return
+                            self.Fault = True
+                            continue
+    #                             raise ValueError("Fix.getSightings: sighting data invalid")
+    #                             return
                         
                     if attr.tag == ("pressure"):
                         try:
                             tup[6] = (int(attr.text))
                             if tup[6] < 100 or tup[6] > 1100:
-                                raise ValueError("Fix.getSightings: sighting data invalid")
+                                self.Fault = True
+                                continue
+    #                                 raise ValueError("Fix.getSightings: sighting data invalid")
                         except:
-                            raise ValueError("Fix.getSightings: sighting data invalid")
+                            self.Fault = True
+                            continue
+    #                             raise ValueError("Fix.getSightings: sighting data invalid")
                         
                     if attr.tag == ("horizon"):
                         if attr.text == "Artificial" or attr.text == "artificial":
@@ -206,19 +232,31 @@ class Fix():
                             if attr.text == "Natural" or attr.text == "natural":
                                 tup[7] = 1
                             else:
-                                raise ValueError("Fix.getSightings: invalid horizon")                   
-                                return
+                                self.Fault = True
+                                continue
+    #                                 raise ValueError("Fix.getSightings: invalid horizon")                   
+    #                                 return
                         
                 if tup[0] == None or tup[1] == None or tup[2] == None or tup[3] == None:
-                    raise ValueError("Fix.getSightings: Lack mandatory tag")                   
-                    return
-                
+                    continue
+    #                     raise ValueError("Fix.getSightings: Lack mandatory tag")                   
+    #                     return
+                if self.fault:
+                    self.faultCount += 1
+                    continue  
                 if tup[7] != 0:
                     tup[7] = (-0.97 * math.sqrt(tup[4])) / 60.0
                 refraction = (-0.00452 * tup[6]) / (273.0 + tup[5]) / math.tan((tup[3][0] + tup[3][1] / 60.0) / 180 * math.pi)
                 adjAlt = tup[7] + refraction + tup[3][0] + tup[3][1]/60.0
                 adjustedAltitude = str(int(adjAlt)) + "d" + str(round((adjAlt - int(adjAlt)) * 60, 1))
-                self.writeLog(tup[0] + "\t" + tup[1] + "\t" + tup[2] + "\t" + adjustedAltitude, time.gmtime())                
+                tup[8] = adjustForeignAttributes
+            st = open(self.starName)
+            for line in st:
+                line = line.replace("\n", "")
+                print line
+            st.close()
+#                 self.writeLog(tup[0] + "\t" + tup[1] + "\t" + tup[2] + "\t" + adjustedAltitude, time.gmtime()) 
+             
         except:
             self.writeLog("End of sighting file" + self.sightName, time.gmtime())
             raise ValueError("Fix.getSightings: unable to parse the xml file")           
