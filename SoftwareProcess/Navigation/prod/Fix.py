@@ -253,6 +253,9 @@ class Fix():
             st = open(self.starName)
             for line in st:
                 line = line.replace("\n", "")
+                content = line.split("\t")
+                if content[0] == tup[0]:
+                    ariesDate = time.strptime(content[1], "%Y-%m-%d")
                 print line
             st.close()
 #                 self.writeLog(tup[0] + "\t" + tup[1] + "\t" + tup[2] + "\t" + adjustedAltitude, time.gmtime()) 
