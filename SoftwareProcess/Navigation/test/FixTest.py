@@ -5,21 +5,30 @@ import Navigation.prod.Fix as F
 
 class TestFix(unittest.TestCase):
     
-    def setUp(self):
-        self.className = "Fix."
-        self.logStartString = "Start of log"
-        self.logSightingString = "Start of sighting file"
+    @classmethod
+    def setUpClass(cls):
+        cls.className = "Fix."
+        cls.logStartString = "Start of log"
+        cls.logSightingString = "Start of sighting file"
+        cls.DEFAULT_LOG_FILE = "log.txt"
         
-        # set default log file name
-        self.DEFAULT_LOG_FILE = "log.txt"
+    def setUp(self):
         if(os.path.isfile(self.DEFAULT_LOG_FILE)):
-            os.remove(self.DEFAULT_LOG_FILE)
-            
+            os.remove(self.DEFAULT_LOG_FILE) 
         # generate random log file name
         self.RANDOM_LOG_FILE = "log" + str(uuid.uuid4())[-12:] + ".txt"
-        print(self.RANDOM_LOG_FILE)
+        self.deleteNamedLogFlag = False
     
-
+    def tearDown(self):
+        if(self.deleteNamedLogFlag):
+            try:
+                if(os.path.isfile(self.RANDOM_LOG_FILE)):
+                    os.remove(self.RANDOM_LOG_FILE)  
+            except:
+                pass
+        
+        
+        
 # 100 Constructor
 #    Analysis
 #        inputs:
@@ -48,7 +57,6 @@ class TestFix(unittest.TestCase):
         try:
             theLogFile = open(self.DEFAULT_LOG_FILE, 'r')
             entry = theLogFile.readline()
-            del theLogFile
             self.assertNotEquals(-1, entry.find("Start of log"), 
                                  "Minor:  first line of log is incorrect")
         except IOError:
@@ -60,11 +68,10 @@ class TestFix(unittest.TestCase):
         try:
             theFix = F.Fix(logFile=self.RANDOM_LOG_FILE)
             self.assertTrue(True)
-        except:
-            self.fail("Minor: incorrect keyword specified")
-            self.cleanup()
- 
-         
+        except Exception as e:
+            self.fail("Major: " + str(e))
+        self.deleteNamedLogFlag = True
+  
     def test100_030_ShouldConstructFixWithNamedFile(self):
         theFix = F.Fix(self.RANDOM_LOG_FILE)
         try:
@@ -75,8 +82,8 @@ class TestFix(unittest.TestCase):
                                  "Minor:  first line of log is incorrect")
         except IOError:
             self.fail()
-        self.assertIsInstance(theFix, F.Fix, "major:  log file failed to create")
-        self.cleanup()  
+        self.assertIsInstance(theFix, F.Fix, "Major:  log file failed to create")
+        self.deleteNamedLogFlag = True
         
     def test100_040_ShouldConstructFixWithExistingFile(self):
         theFix = F.Fix(self.RANDOM_LOG_FILE)
@@ -92,8 +99,7 @@ class TestFix(unittest.TestCase):
             self.fail()
         self.assertIsInstance(theFix, F.Fix, 
                               "Major:  log file failed to create")
-        theLogFile.close()
-        self.cleanup()  
+        self.deleteNamedLogFlag = True
         
     def test100_910_ShouldRaiseExceptionOnFileNameLength(self):
         expectedDiag = self.className + "__init__:"
@@ -136,7 +142,7 @@ class TestFix(unittest.TestCase):
             self.assertEquals(result, "CA02_200_ValidStarSightingFile.xml")
         except:
             self.fail("Minor: incorrect keyword specified in setSighting parm")
-        self.cleanup()   
+        self.deleteNamedLogFlag = True 
 
     def test200_020_ShouldSetValidSightingFile(self):
         theFix = F.Fix()
@@ -186,7 +192,7 @@ class TestFix(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             theFix.setSightingFile()
         self.assertEquals(expectedDiag, context.exception.args[0][0:len(expectedDiag)],
-                          "Major:  failure to check for missing sighting file")       
+                          "Minor:  failure to check for missing sighting file")       
         
            
     def test200_960_SholdRaiseExceptionOnMissingFile(self):
@@ -195,7 +201,7 @@ class TestFix(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             theFix.setSightingFile(self.RANDOM_LOG_FILE+".xml")
         self.assertEquals(expectedDiag, context.exception.args[0][0:len(expectedDiag)],
-                          "Major:  failure to check for missing sighting file") 
+                          "Minor:  failure to check for missing sighting file") 
         
 # 300 getSightings
 #    Analysis
@@ -265,7 +271,7 @@ class TestFix(unittest.TestCase):
                     self.assertNotEquals(-1, logFileContents[logEntryNumber].find(target), 
                                          "Major:  Log entry is not correct for getSightings")
         self.assertEquals(1, sightingCount)
-        self.cleanup()  
+        self.deleteNamedLogFlag = True
         
     def test300_040_ShouldLogMultipleSightingsInTimeOrder(self):       
         testFile = "CA02_300_ValidMultipleStarSighting.xml"
@@ -284,13 +290,15 @@ class TestFix(unittest.TestCase):
         # find entry with first star
         entryIndex = self.indexInList(targetStringList[0][0], logFileContents)
         self.assertLess(-1, entryIndex, 
-                           "failure to find " + targetStringList[0][0] +  " in log")
-        for index in range(entryIndex+1, len(targetStringList)):
+            "Major: failure to find " + targetStringList[0][0] +  " in log")
+     
+        for targetString in targetStringList:
+            if not (targetString[0] in logFileContents[entryIndex]):
+                self.fail("failure to find {} in log".format(targetString[0]))
             entryIndex += 1
-            if(not(targetStringList[index][0] in logFileContents[entryIndex])):
-                self.fail("failure to find star in log")
-        self.cleanup()  
-
+     
+        self.deleteNamedLogFlag = True  
+        
     def test300_050_ShouldLogMultipleSightingsWithSameDateTime(self):       
         testFile = "CA02_300_ValidMultipleStarSightingSameDateTime.xml"
         targetStringList = [
@@ -309,12 +317,12 @@ class TestFix(unittest.TestCase):
         # find entry with first star
         entryIndex = self.indexInList(targetStringList[0][0], logFileContents)
         self.assertLess(-1, entryIndex, 
-                           "failure to find " + targetStringList[0][0] +  " in log")
+                           "Major: failure to find " + targetStringList[0][0] +  " in log")
         for index in range(entryIndex+1, len(targetStringList)):
             entryIndex += 1
             if(not(targetStringList[index][0] in logFileContents[entryIndex])):
-                self.fail("failure to find star in log")
-        self.cleanup()   
+                self.fail("Major: failure to find star in log")
+        self.deleteNamedLogFlag = True 
 
     def test300_060_ShouldHandleNoSightings(self):       
         testFile = "CA02_300_ValidWithNoSightings.xml"
@@ -331,11 +339,11 @@ class TestFix(unittest.TestCase):
         
         endOfSightingFileIndex = self.indexInList(targetString1, logFileContents)
         self.assertLess(-1,endOfSightingFileIndex,
-                           "log file does not contain 'end of sighting file' entry")
+                           "Major: log file does not contain 'end of sighting file' entry")
         self.assertLess(1, endOfSightingFileIndex,
-                           "log file does not contain sufficient entries")
+                           "Major: log file does not contain sufficient entries")
         self.assertTrue((targetString2 in logFileContents[endOfSightingFileIndex - 1]))
-        self.cleanup()   
+        self.deleteNamedLogFlag = True 
         
     def test300_070_ShouldIgnoreExtraneousTags(self):       
         testFile = "CA02_300_ValidWithExtraneousTags.xml"
@@ -353,12 +361,12 @@ class TestFix(unittest.TestCase):
         # find entry with first star
         entryIndex = self.indexInList(targetStringList[0][0], logFileContents)
         self.assertLess(-1, entryIndex, 
-                           "failure to find " + targetStringList[0][0] +  " in log")
+                           "Major: failure to find " + targetStringList[0][0] +  " in log")
         for index in range(entryIndex+1, len(targetStringList)):
             entryIndex += 1
             if(not(targetStringList[index][0] in logFileContents[entryIndex])):
-                self.fail("failure to find star in log")
-        self.cleanup()    
+                self.fail("Major: failure to find star in log")
+        self.deleteNamedLogFlag = True
 
 
     def test300_080_ShouldLogStarWithNaturalHorizon(self):
@@ -380,7 +388,7 @@ class TestFix(unittest.TestCase):
                     self.assertNotEquals(-1, logFileContents[logEntryNumber].find(target), 
                                          "Major:  Log entry is not correct for getSightings")
         self.assertEquals(1, sightingCount)
-        self.cleanup()  
+        self.deleteNamedLogFlag = True
 
 
     def test300_080_ShouldLogStarWithArtificialHorizon(self):
@@ -402,7 +410,7 @@ class TestFix(unittest.TestCase):
                     self.assertNotEquals(-1, logFileContents[logEntryNumber].find(target), 
                                          "Major:  Log entry is not correct for getSightings")
         self.assertEquals(1, sightingCount)
-        self.cleanup()  
+        self.deleteNamedLogFlag = True
         
         
     def test300_090_ShouldLogStarWithDefaultSightingValues(self):
@@ -424,7 +432,7 @@ class TestFix(unittest.TestCase):
                     self.assertNotEquals(-1, logFileContents[logEntryNumber].find(target), 
                                          "Major:  Log entry is not correct for getSightings")
         self.assertEquals(1, sightingCount)
-        self.cleanup()  
+        self.deleteNamedLogFlag = True
 
     def test300_910_ShouldRaiseExceptionOnNotSettingSightingsFile(self):
         expectedDiag = self.className + "getSightings:"
@@ -450,7 +458,7 @@ class TestFix(unittest.TestCase):
             theFix.setSightingFile("CA02_300_InvalidBody.xml")
             theFix.getSightings()
         self.assertEquals(expectedDiag, context.exception.args[0][0:len(expectedDiag)],
-                          "Major:  failure to check for invalid body")    
+                          "Minor:  failure to check for invalid body")    
         
     def test300_940_ShouldRaiseExceptionOnInvalidDate(self):
         expectedDiag = self.className + "getSightings:"
@@ -459,7 +467,7 @@ class TestFix(unittest.TestCase):
             theFix.setSightingFile("CA02_300_InvalidDate.xml")
             theFix.getSightings()
         self.assertEquals(expectedDiag, context.exception.args[0][0:len(expectedDiag)],
-                          "Major:  failure to check for invalid body") 
+                          "Minor:  failure to check for invalid date") 
         
     def test300_950_ShouldRaiseExceptionOnInvalidTime(self):
         expectedDiag = self.className + "getSightings:"
@@ -468,7 +476,7 @@ class TestFix(unittest.TestCase):
             theFix.setSightingFile("CA02_300_InvalidTime.xml")
             theFix.getSightings()
         self.assertEquals(expectedDiag, context.exception.args[0][0:len(expectedDiag)],
-                          "Major:  failure to check for invalid body")    
+                          "Minor:  failure to check for invalid time")    
         
     def test300_960_ShouldRaiseExceptionOnInvalidObservation(self):
         expectedDiag = self.className + "getSightings:"
@@ -477,7 +485,7 @@ class TestFix(unittest.TestCase):
             theFix.setSightingFile("CA02_300_InvalidObservation.xml")
             theFix.getSightings()
         self.assertEquals(expectedDiag, context.exception.args[0][0:len(expectedDiag)],
-                          "Major:  failure to check for invalid body")       
+                          "Major:  failure to check for invalid observation")       
         
     def test300_970_ShouldRaiseExceptionOnInvalidHeight(self):
         expectedDiag = self.className + "getSightings:"
@@ -486,7 +494,7 @@ class TestFix(unittest.TestCase):
             theFix.setSightingFile("CA02_300_InvalidHeight.xml")
             theFix.getSightings()
         self.assertEquals(expectedDiag, context.exception.args[0][0:len(expectedDiag)],
-                          "Major:  failure to check for invalid body" )
+                          "Minor:  failure to check for invalid height" )
         
     def test300_980_ShouldRaiseExceptionOnInvalidTemperature(self):
         expectedDiag = self.className + "getSightings:"
@@ -495,7 +503,7 @@ class TestFix(unittest.TestCase):
             theFix.setSightingFile("CA02_300_InvalidTemperature.xml")
             theFix.getSightings()
         self.assertEquals(expectedDiag, context.exception.args[0][0:len(expectedDiag)],
-                          "Major:  failure to check for invalid body" )
+                          "Minor:  failure to check for invalid temperature" )
         
     def test300_990_ShouldRaiseExceptionOnInvalidPressure(self):
         expectedDiag = self.className + "getSightings:"
@@ -504,7 +512,7 @@ class TestFix(unittest.TestCase):
             theFix.setSightingFile("CA02_300_InvalidPressure.xml")
             theFix.getSightings()
         self.assertEquals(expectedDiag, context.exception.args[0][0:len(expectedDiag)],
-                          "Major:  failure to check for invalid body" )
+                          "Minor:  failure to check for invalid pressure" )
         
     def test300_995_ShouldRaiseExceptionOnInvalidHorizon(self):
         expectedDiag = self.className + "getSightings:"
@@ -513,11 +521,7 @@ class TestFix(unittest.TestCase):
             theFix.setSightingFile("CA02_300_InvalidHorizon.xml")
             theFix.getSightings()
         self.assertEquals(expectedDiag, context.exception.args[0][0:len(expectedDiag)],
-                          "Major:  failure to check for invalid body" )
-        
-               
-
-
+                          "Minor:  failure to check for invalid horizon" )
         
 
 #  helper methods
@@ -527,6 +531,3 @@ class TestFix(unittest.TestCase):
                 return index
         return -1
     
-    def cleanup(self):
-        if(os.path.isfile(self.RANDOM_LOG_FILE)):
-            os.remove(self.RANDOM_LOG_FILE)  
