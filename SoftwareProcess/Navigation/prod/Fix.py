@@ -8,7 +8,7 @@ import time
 import xml.etree.ElementTree as ET
 import math
 import os.path as path
-from pip._vendor.html5lib.constants import adjustForeignAttributes
+from math import floor
 
 
 class Fix():
@@ -117,7 +117,7 @@ class Fix():
     def getSightings(self):        
         if not (self.sightingFileSet and self.ariesFileSet and self.starFileSet):
             raise ValueError("Fix.setStarFile: Files not set")
-        optputList = []
+        outputList = []
         et = None
         self.faultCount = 0 
         try:
@@ -239,48 +239,105 @@ class Fix():
     #                                 return
                         
                 
+                self.fault = False
+                lat = None
+                #lot = None
+                templat = None
+                tempsha = None
+                self.sha = [None, None]
+                self.gha1 = [None, None]
+                self.gha2 = [None, None]   
+                self.gha = [None, None]
                 
                 st = open(self.starName)
                 for line in st:
-                    self.fault = False
-                    lat = None
-                    lot = None
-                    templot = None
-                    templat = None
                     try:
                         line = line.replace("\n", "")
                         content = line.split("\t")
                         if content[0] == tup[0]:
                             starDate = time.strptime(content[1], "%m/%d/%Y")
                             if starDate == tup[1]:
-                                lat = content[2].split("d")
+                                lat = content[3].split("d")
                                 a = int(lat[0])
                                 b = float(lat[1])
-                                if len(lat) != 2 or a < 0 or a >= 360 or b < 0 or b >= 360:
+                                if len(lat) != 2 or a < -90 or a >= 90 or b < 0 or b >= 60:
                                     self.fault = True
                                     break
-                                tup[9] = content[2]
+                                tempsha = content[2].split("d")
+                                a = int(lat[0])
+                                b = float(lat[1])
+                                if len(tempsha) != 2 or a < 0 or a >= 360 or b < 0 or b >= 60:
+                                    self.fault = True
+                                    break
+                                tup[9] = content[3]
+                                self.sha[0] = a
+                                self.sha[1] = b
+                                print line
+                                break
                             else:
                                 if content[0] < tup[0]:
-                                    templat = content[2].split("d")
+                                    templat = content[3].split("d")
                                     a = int(templat[0])
                                     b = float(templat[1])
-                                    if len(templat) != 2 or a < 0 or a >= 360 or b < 0 or b >= 360:
+                                    if len(templat) != 2 or a < -90 or a > 90 or b < 0 or b >= 60:
+                                        self.fault = True
+                                        break
+                                    tempsha = content[2].split("d")
+                                    a = int(lat[0])
+                                    b = float(lat[1])
+                                    if len(tempsha) != 2 or a < 0 or a >= 360 or b < 0 or b >= 60:
                                         self.fault = True
                                         break
                                 else:
-                                    if templat == None:
+                                    if templat == None or tempsha == None:
                                         self.fault = True
                                         break
-                                    tup[9] = content[2]
-                                    
-                        print line
+                                    tup[9] = content[3]
+                                    self.sha[0] = a
+                                    self.sha[1] = b
+                                    break                                    
                     except:
                         self.fault = True
                         break
                 st.close()
-                
-                
+                ar = open(self.ariesName)
+                for line in ar:
+                    try:
+                        line = line.replace("\n", "")
+                        content = line.split("\t")
+                        if time.strptime(content[0], "%m/%d/%y") == tup[1]:
+                            if int(content[1]) == tup[2].tm_hour:
+                                temp = content[2].split("d")
+                                self.sha1[0] = int(temp[0])
+                                self.sha1[1] = float(temp[1])
+                                if self.sha1[0] >= 360 or self.sha1[0] < 0 or self.sha1[1] >= 60.0 or self.sha1[1] < 0.0:
+                                    self.fault = True
+                                    break
+                            else:
+                                if int(content[1]) == self.time.tm_hour + 1 and self.sha1[0] != None and self.sha1[1] != None:
+                                    temp = content[2].split("d")
+                                    self.sha2[0] = int(temp[0])
+                                    self.sha2[1] = float(temp[1])
+                                    if self.sha2[0] >= 360 or self.sha2[0] < 0 or self.sha2[1] >= 60.0 or self.sha2[1] < 0.0:
+                                        self.fault = True
+                                        break
+                    except:
+                        self.fault = True
+                        break
+                ar.close()
+
+                try:
+                    gha = self.gha1[0] + self.gha1[1]/60.0 + abs(self.gha2[0] + self.gha2[1]/60.0 - (self.gha1[0] + self.gha1[1]/60.0)) * (tup[2].tm_min * 60 + tup[2].tm_sec)/3600
+                    gha[0] = gha[0] + self.sha[0]
+                    gha[1] = gha[1] + self.sha[1]
+                    self.gha[0] = floor(gha)
+                    self.gha[1] = round((gha - self.gha[0]) * 60, 1)
+                    while self.gha[0] >= 360:
+                        self.gha -= 360
+                    tup[10] = str(self.gha[0]) + "d" + str(self.gha[1])
+                except:
+                    self.fault = True
+
                 if tup[0] == None or tup[1] == None or tup[2] == None or tup[3] == None or tup[9] == None or tup[10] == None:
                     self.fault = True
     #                     raise ValueError("Fix.getSightings: Lack mandatory tag")                   
@@ -293,7 +350,11 @@ class Fix():
                 if self.fault:
                     self.faultCount += 1
                     continue  
-                optputList.append(tup)
+                outputList.append(tup)
+                outputList = sorted(outputList, key = lambda outputList:(outputList[1], outputList[2]), reverse = True)
+                for item in outputList:
+                    self.writeLog(item[0] + "\t" + item[1] + "\t" + item[2] + "\t" + item[8] + "\t" + item[9] + "\t" + item[10], time.gmtime())
+                self.writeLog(str(self.faultCount), time.gmtime())
 #                 self.writeLog(tup[0] + "\t" + tup[1] + "\t" + tup[2] + "\t" + adjustedAltitude, time.gmtime()) 
              
         except:
