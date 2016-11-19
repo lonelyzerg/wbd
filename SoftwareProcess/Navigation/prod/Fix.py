@@ -129,9 +129,9 @@ class Fix():
                 tup = [None, None, None, None, 0, 22.2222222, 1010, 1, 0, None, None]
                 for attr in sightings:                    
                     if attr.tag == "body":
-                        if len(attr.text) < 1:
+                        if attr.text == None or len(attr.text) < 1:
                             self.fault = True
-                            continue
+                            break
     #                             raise ValueError("Fix.getSightings: sighting data invalid")
                         tup[0] = (attr.text)
                         
@@ -191,11 +191,13 @@ class Fix():
                             tup[4] = (float(attr.text))
                             if tup[4] < 0:
                                 self.fault = True
+                                tup[4] = None
                                 continue
     #                                 raise ValueError("Fix.getSightings: sighting data invalid")
     #                                 return
                         except:
                             self.fault = True
+                            tup[4] = None
                             continue
     #                             raise ValueError("Fix.getSightings: sighting data invalid")
     #                             return
@@ -238,7 +240,7 @@ class Fix():
     #                                 raise ValueError("Fix.getSightings: invalid horizon")                   
     #                                 return
                 
-                if tup[0] == None or tup[1] == None or tup[2] == None or tup[3] == None:
+                if tup[0] == None or tup[1] == None or tup[2] == None or tup[3] == None or self.fault == True:
                     self.faultCount += 1
                     continue 
                              
@@ -353,7 +355,7 @@ class Fix():
                 except:
                     self.fault = True
 
-                if tup[9] == None or tup[10] == None:  
+                if tup[9] == None or tup[10] == None or self.fault == True:  
                     self.faultCount += 1
                     continue 
     #                                      
