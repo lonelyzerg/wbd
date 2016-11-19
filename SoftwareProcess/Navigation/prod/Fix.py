@@ -237,8 +237,12 @@ class Fix():
                                 continue
     #                                 raise ValueError("Fix.getSightings: invalid horizon")                   
     #                                 return
-                        
                 
+                if tup[0] == None or tup[1] == None or tup[2] == None or tup[3] == None:
+                    self.faultCount += 1
+                    continue 
+                             
+                 
                 self.fault = False
                 lat = None
                 #lot = None
@@ -248,14 +252,15 @@ class Fix():
                 self.gha1 = [None, None]
                 self.gha2 = [None, None]   
                 self.gha = [None, None]
-                
+                 
                 st = open(self.starName)
                 for line in st:
                     try:
                         line = line.replace("\n", "")
                         content = line.split("\t")
                         if content[0] == tup[0]:
-                            starDate = time.strptime(content[1], "%m/%d/%Y")
+                            print content[1]
+                            starDate = time.strptime(content[1], "%m/%d/%y")
                             if starDate == tup[1]:
                                 lat = content[3].split("d")
                                 a = int(lat[0])
@@ -264,8 +269,8 @@ class Fix():
                                     self.fault = True
                                     break
                                 tempsha = content[2].split("d")
-                                a = int(lat[0])
-                                b = float(lat[1])
+                                a = int(tempsha[0])
+                                b = float(tempsha[1])
                                 if len(tempsha) != 2 or a < 0 or a >= 360 or b < 0 or b >= 60:
                                     self.fault = True
                                     break
@@ -275,7 +280,7 @@ class Fix():
                                 print line
                                 break
                             else:
-                                if content[0] < tup[0]:
+                                if starDate < tup[1]:
                                     templat = content[3].split("d")
                                     a = int(templat[0])
                                     b = float(templat[1])
@@ -283,8 +288,8 @@ class Fix():
                                         self.fault = True
                                         break
                                     tempsha = content[2].split("d")
-                                    a = int(lat[0])
-                                    b = float(lat[1])
+                                    a = int(tempsha[0])
+                                    b = float(templat[1])
                                     if len(tempsha) != 2 or a < 0 or a >= 360 or b < 0 or b >= 60:
                                         self.fault = True
                                         break
@@ -305,22 +310,34 @@ class Fix():
                     try:
                         line = line.replace("\n", "")
                         content = line.split("\t")
-                        if time.strptime(content[0], "%m/%d/%y") == tup[1]:
+                        temptime = time.strptime(content[0], "%m/%d/%y")          
+                        if temptime == tup[1]:
                             if int(content[1]) == tup[2].tm_hour:
                                 temp = content[2].split("d")
-                                self.sha1[0] = int(temp[0])
-                                self.sha1[1] = float(temp[1])
-                                if self.sha1[0] >= 360 or self.sha1[0] < 0 or self.sha1[1] >= 60.0 or self.sha1[1] < 0.0:
+                                self.gha1[0] = int(temp[0])
+                                self.gha1[1] = float(temp[1])
+                                if self.gha1[0] >= 360 or self.gha1[0] < 0 or self.gha1[1] >= 60.0 or self.gha1[1] < 0.0:
                                     self.fault = True
                                     break
                             else:
-                                if int(content[1]) == self.time.tm_hour + 1 and self.sha1[0] != None and self.sha1[1] != None:
+                                if int(content[1]) == self.time.tm_hour + 1 and self.gha1[0] != None and self.gha1[1] != None:
                                     temp = content[2].split("d")
-                                    self.sha2[0] = int(temp[0])
-                                    self.sha2[1] = float(temp[1])
-                                    if self.sha2[0] >= 360 or self.sha2[0] < 0 or self.sha2[1] >= 60.0 or self.sha2[1] < 0.0:
+                                    self.gha2[0] = int(temp[0])
+                                    self.gha2[1] = float(temp[1])
+                                    if self.gha2[0] >= 360 or self.gha2[0] < 0 or self.gha2[1] >= 60.0 or self.gha2[1] < 0.0:
                                         self.fault = True
                                         break
+                                    break
+                        else:
+                            if  temptime.tm_year == tup[1].tm_year and temptime.tm_mon == tup[1].tm_mon and temptime.tm_mday == tup[1].tm_mday + 1:
+                                if int(content[1]) == 0 and self.gha1[0] != None and self.gha1[1] != None:
+                                    temp = content[2].split("d")
+                                    self.gha2[0] = int(temp[0])
+                                    self.gha2[1] = float(temp[1])
+                                    if self.gha2[0] >= 360 or self.gha2[0] < 0 or self.gha2[1] >= 60.0 or self.gha2[1] < 0.0:
+                                        self.fault = True
+                                        break
+                                    break
                     except:
                         self.fault = True
                         break
@@ -328,8 +345,6 @@ class Fix():
 
                 try:
                     gha = self.gha1[0] + self.gha1[1]/60.0 + abs(self.gha2[0] + self.gha2[1]/60.0 - (self.gha1[0] + self.gha1[1]/60.0)) * (tup[2].tm_min * 60 + tup[2].tm_sec)/3600
-                    gha[0] = gha[0] + self.sha[0]
-                    gha[1] = gha[1] + self.sha[1]
                     self.gha[0] = floor(gha)
                     self.gha[1] = round((gha - self.gha[0]) * 60, 1)
                     while self.gha[0] >= 360:
@@ -338,9 +353,10 @@ class Fix():
                 except:
                     self.fault = True
 
-                if tup[0] == None or tup[1] == None or tup[2] == None or tup[3] == None or tup[9] == None or tup[10] == None:
-                    self.fault = True
-    #                     raise ValueError("Fix.getSightings: Lack mandatory tag")                   
+                if tup[9] == None or tup[10] == None:  
+                    self.faultCount += 1
+                    continue 
+    #                                      
     #                     return            
                 if tup[7] != 0:
                     tup[7] = (-0.97 * math.sqrt(tup[4])) / 60.0
@@ -353,14 +369,15 @@ class Fix():
                 outputList.append(tup)
                 outputList = sorted(outputList, key = lambda outputList:(outputList[1], outputList[2]), reverse = True)
                 for item in outputList:
-                    self.writeLog(item[0] + "\t" + item[1] + "\t" + item[2] + "\t" + item[8] + "\t" + item[9] + "\t" + item[10], time.gmtime())
-                self.writeLog(str(self.faultCount), time.gmtime())
+                    self.writeLog(item[0] + "\t" + time.strftime("%Y-%m-%d",item[1]) + "\t" + time.strftime("%H:%M:%S",item[2]) + "\t" + item[8] + "\t" + item[9] + "\t" + item[10], time.gmtime())
+                
 #                 self.writeLog(tup[0] + "\t" + tup[1] + "\t" + tup[2] + "\t" + adjustedAltitude, time.gmtime()) 
              
         except:
             self.writeLog("End of sighting file" + self.sightName, time.gmtime())
             raise ValueError("Fix.getSightings: unable to parse the xml file")           
             return
+        self.writeLog("Sighting errors:\t" + str(self.faultCount), time.gmtime())
         self.writeLog("End of sighting file " + self.sightName, time.gmtime())
         return ("0d0.0", "0d0.0")
     
