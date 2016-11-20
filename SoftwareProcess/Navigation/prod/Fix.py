@@ -64,7 +64,7 @@ class Fix():
         if not isinstance(ariesFile, str):
             raise ValueError("Fix.setAriesFile: Invalid input (input is not a String)")      #judge if input is a string
             return
-        if len(ariesFile) < 4:
+        if len(ariesFile) < 5:
             raise ValueError("Fix.setAriesFile: Invalid input (input length less than 1)")      #judge if input length >= 1
             return
         if ariesFile[-4:] != ".txt":
@@ -91,11 +91,11 @@ class Fix():
         if not isinstance(starFile, str):
             raise ValueError("Fix.setStarFile: Invalid input (input is not a String)")      #judge if input is a string
             return
-        if len(starFile) < 4:
+        if len(starFile) < 5:
             raise ValueError("Fix.setStarFile: Invalid input (input length less than 1)")      #judge if input length >= 1
             return
         if starFile[-4:] != ".txt":
-            raise ValueError("Fix.setStarFilee: Invalid input (input is not an txt file)")      #judge if input is .txt
+            raise ValueError("Fix.setStarFile: Invalid input (input is not an txt file)")      #judge if input is .txt
             return
         if not path.isfile(starFile):
             raise ValueError("Fix.setStarFile: File not exit")      #judge if input is a file
@@ -116,7 +116,7 @@ class Fix():
     
     def getSightings(self):        
         if not (self.sightingFileSet and self.ariesFileSet and self.starFileSet):
-            raise ValueError("Fix.setStarFile: Files not set")
+            raise ValueError("Fix.getSightings: Files not set")
         outputList = []
         et = None
         self.faultCount = 0 
@@ -261,7 +261,6 @@ class Fix():
                         line = line.replace("\n", "")
                         content = line.split("\t")
                         if content[0] == tup[0]:
-                            print content[1]
                             starDate = time.strptime(content[1], "%m/%d/%y")
                             if starDate == tup[1]:
                                 lat = content[3].split("d")
@@ -307,6 +306,7 @@ class Fix():
                         self.fault = True
                         break
                 st.close()
+                print self.sha[0]+self.sha[1]/60.0
                 ar = open(self.ariesName)
                 for line in ar:
                     try:
@@ -346,12 +346,18 @@ class Fix():
                 ar.close()
 
                 try:
-                    gha = self.gha1[0] + self.gha1[1]/60.0 + abs(self.gha2[0] + self.gha2[1]/60.0 - (self.gha1[0] + self.gha1[1]/60.0)) * (tup[2].tm_min * 60 + tup[2].tm_sec)/3600
+                    gha = self.gha1[0] + self.gha1[1]/60.0 + abs(self.gha2[0] + self.gha2[1]/60.0 - (self.gha1[0] + self.gha1[1]/60.0)) * (tup[2].tm_min * 60 + tup[2].tm_sec)/3600  + self.sha[0] + self.sha[1] / 60.0
                     self.gha[0] = floor(gha)
                     self.gha[1] = round((gha - self.gha[0]) * 60, 1)
+                    
+                    while self.gha[1] >= 60:
+                        self.gha[1] -= 60
+                        self.gha[0] += 1
                     while self.gha[0] >= 360:
-                        self.gha -= 360
-                    tup[10] = str(self.gha[0]) + "d" + str(self.gha[1])
+                        self.gha[0] -= 360
+                    print str(gha) + " and " + str(self.gha[0])
+                    print str(self.gha[0]) + "d" + str(self.gha[1])
+                    tup[10] = str(int(self.gha[0])) + "d" + str(self.gha[1])
                 except:
                     self.fault = True
 
@@ -371,6 +377,7 @@ class Fix():
                 outputList.append(tup)
                 outputList = sorted(outputList, key = lambda outputList:(outputList[1], outputList[2]), reverse = True)
                 for item in outputList:
+                    print item[0] + "\t" + time.strftime("%Y-%m-%d",item[1]) + "\t" + time.strftime("%H:%M:%S",item[2]) + "\t" + item[8] + "\t" + item[9] + "\t" + item[10]
                     self.writeLog(item[0] + "\t" + time.strftime("%Y-%m-%d",item[1]) + "\t" + time.strftime("%H:%M:%S",item[2]) + "\t" + item[8] + "\t" + item[9] + "\t" + item[10], time.gmtime())
                 
 #                 self.writeLog(tup[0] + "\t" + tup[1] + "\t" + tup[2] + "\t" + adjustedAltitude, time.gmtime()) 
