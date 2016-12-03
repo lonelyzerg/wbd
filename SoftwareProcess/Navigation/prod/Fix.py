@@ -114,10 +114,36 @@ class Fix():
         self.writeLog("Star file:\t" + path.abspath(starFile), time.gmtime())
         return path.abspath(starFile) 
     
-    def getSightings(self):        
+    def getSightings(self, assumedLatitude = "0d0.0", assumedLongitude = "0d0.0"):        
         if not (self.sightingFileSet and self.ariesFileSet and self.starFileSet):
             raise ValueError("Fix.getSightings: Files not set")
+        if not assumedLatitude == "0d0.0":
+            temp = assumedLatitude.split("d")
+            if len(temp) != 2 or (not (temp[0][0] == 'N' or temp[0][0] == 'S' or temp[0][0] == 'n' or temp[0][0] == 's')):
+                raise ValueError("Fix.getSightings: Invalid latitude")
+            self.sphere = temp[0][0]
+            try:
+                temp[0] = int(temp[0][1:])
+                temp[1] = float(temp[1])
+                if temp[0] < 0 or temp[0] >= 90 or temp[1] < 0 or temp[1] >= 60:
+                    raise ValueError("Fix.getSightings: Invalid latitude")
+                self.asla = temp
+            except:
+                raise ValueError("Fix.getSightings: Invalid latitude")
+        temp = assumedLongitude.split("d")    
+        if len(temp) != 2:
+            raise ValueError("Fix.getSightings: Invalid longitude")
+        try:
+            temp[0] = int(temp[0])
+            temp[1] = float(temp[1])
+            if temp[0] < 0 or temp[0] >= 360 or temp[1] < 0 or temp[1] >= 60:
+                raise ValueError("Fix.getSightings: Invalid longitude")
+            self.aslo = temp
+        except:
+            raise ValueError("Fix.getSightings: Invalid longitude")
         outputList = []
+        self.sumc = 0
+        self.sums = 0
         et = None
         self.faultCount = 0 
         try:
@@ -355,17 +381,14 @@ class Fix():
                         self.gha[0] += 1
                     while self.gha[0] >= 360:
                         self.gha[0] -= 360
-                    print str(gha) + " and " + str(self.gha[0])
-                    print str(self.gha[0]) + "d" + str(self.gha[1])
                     tup[10] = str(int(self.gha[0])) + "d" + str(self.gha[1])
                 except:
                     self.fault = True
-
+                
                 if tup[9] == None or tup[10] == None or self.fault == True:  
                     self.faultCount += 1
                     continue 
-    #                                      
-    #                     return            
+         
                 if tup[7] != 0:
                     tup[7] = (-0.97 * math.sqrt(tup[4])) / 60.0
                 refraction = (-0.00452 * tup[6]) / (273.0 + tup[5]) / math.tan((tup[3][0] + tup[3][1] / 60.0) / 180 * math.pi)
@@ -374,6 +397,23 @@ class Fix():
                 if self.fault:
                     self.faultCount += 1
                     continue  
+                
+                temp = tup[9].split("d")
+                gpla = int(temp[0]) + float(temp[1]) * 60               
+                corAlt = math.asin(math.sin(gpla / 180 * math.pi) * math.sin((self.asla[0] + self.asla[1] * 60) / 180 * math.pi)\
+                                   + math.cos(gpla / 180 * math.pi) * math.cos((self.asla[0] + self.asla[1] * 60) / 180 * math.pi))                
+                LHA = self.also[0] + self.also[1] * 60 - self.gha[0] - self.gha[1] * 60
+                distAdj = adjAlt - corAlt / math.pi * 180
+                azAdj = math.acos((math.sin(gpla / 180 * math.pi) - math.sin((self.asla[0] + self.asla[1] * 60) / 180 * math.pi))\
+                                  * math.cos(gpla / 180 * math.pi) * math.cos(distAdj / 180 * math.pi) * math.cos(LHA / 180 * math.pi))
+                
+                self.distAdj = round(distAdj * 60, 0)
+                
+                temp = []
+                temp.append(int(azAdj))
+                temp.append(round((azAdj - int(azAdj)) * 60, 1))
+                self.azAdj = 
+                
                 outputList.append(tup)
                 outputList = sorted(outputList, key = lambda outputList:(outputList[1], outputList[2]), reverse = True)
                 for item in outputList:
